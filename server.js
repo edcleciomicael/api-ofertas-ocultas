@@ -23,15 +23,21 @@ app.get('/api/search', async (req, res) => {
 
 // Rota de ofertas
 app.get('/api/deals', async (req, res) => {
-  const products = await searchProducts('promoção');
-  const deals = products.filter(p => p.discount >= 20);
+  const products = await searchProducts('iphone'); // 🔥 mudou aqui
+
+  const deals = products.filter(p =>
+    (p.discount && p.discount >= 10) || p.sales > 100
+  );
+
   res.json(deals);
 });
 
 // Rota de mais vendidos
 app.get('/api/trending', async (req, res) => {
   const products = await searchProducts('iphone');
+
   const sorted = products.sort((a, b) => b.sales - a.sales);
+
   res.json(sorted.slice(0, 20));
 });
 
