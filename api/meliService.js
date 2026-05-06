@@ -5,6 +5,33 @@ async function searchProducts(query) {
     const response = await axios.get(
       "https://api.mercadolibre.com/sites/MLB/search",
       {
+        params: { q: query, limit: 5 },
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json"
+        }
+      }
+    );
+
+    console.log("STATUS:", response.status);
+    console.log("RESULTS LENGTH:", response.data.results.length);
+
+    return response.data.results; // 🔥 SEM MAP
+  } catch (error) {
+    console.error("ERRO COMPLETO:", error.response?.status, error.response?.data);
+    return [];
+  }
+}
+
+module.exports = { searchProducts };
+
+/*const axios = require("axios");
+
+async function searchProducts(query) {
+  try {
+    const response = await axios.get(
+      "https://api.mercadolibre.com/sites/MLB/search",
+      {
         params: {
           q: query,
           limit: 20
@@ -45,4 +72,4 @@ async function searchProducts(query) {
   }
 }
 
-module.exports = { searchProducts }; 
+module.exports = { searchProducts }; */
