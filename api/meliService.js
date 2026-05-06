@@ -2,23 +2,32 @@ const axios = require("axios");
 
 async function searchProducts(query) {
   try {
+    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
+
     const response = await axios.get(
-      "https://api.mercadolibre.com/sites/MLB/search",
-      {
-        params: { q: query, limit: 5 },
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json"
-        }
-      }
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
     );
 
-    console.log("STATUS:", response.status);
-    console.log("RESULTS LENGTH:", response.data.results.length);
+    const data = response.data;
 
-    return response.data.results; // 🔥 SEM MAP
+    if (!data.results) return [];
+
+    return data.results.map(item => ({
+      external_id: item.id,
+      name: item.title,
+      price: item.price,
+      old_price: item.original_price || null,
+      discount: item.original_price
+        ? Math.round(((item.original_price - item.price) / item.original_price) * 100)
+        : null,
+      image: item.thumbnail,
+      link: item.permalink,
+      sales: item.sold_quantity,
+      free_shipping: item.shipping?.free_shipping
+    }));
+
   } catch (error) {
-    console.error("ERRO COMPLETO:", error.response?.status, error.response?.data);
+    console.error("ERRO PROXY:", error.message);
     return [];
   }
 }
