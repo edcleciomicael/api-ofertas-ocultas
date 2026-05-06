@@ -10,8 +10,11 @@ async function searchProducts(query) {
           limit: 20
         },
         headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json"
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "application/json",
+          "Accept-Language": "pt-BR",
+          "Connection": "keep-alive"
         }
       }
     );
@@ -22,8 +25,10 @@ async function searchProducts(query) {
       price: item.price,
       old_price: item.original_price || null,
       discount: item.original_price
-        ? Math.round(((item.original_price - item.price) / item.original_price) * 100)
-        : 0,
+        ? Math.round(
+            ((item.original_price - item.price) / item.original_price) * 100
+          )
+        : null, // 🔥 mudou aqui
       image: item.thumbnail,
       link: item.permalink,
       sales: item.sold_quantity,
@@ -31,9 +36,13 @@ async function searchProducts(query) {
     }));
 
   } catch (error) {
-    console.error("Erro Mercado Livre:", error.response?.data || error.message);
+    console.error(
+      "Erro Mercado Livre:",
+      error.response?.status,
+      error.response?.data || error.message
+    );
     return [];
   }
 }
 
-module.exports = { searchProducts };
+module.exports = { searchProducts }; 
