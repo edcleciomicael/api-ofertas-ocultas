@@ -1,59 +1,64 @@
-const axios = require("axios");
+const puppeteer = require("puppeteer");
 
 async function searchProducts(query) {
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
+
   try {
 
-    // URL do Mercado Livre
-    const mlUrl =
-      `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=20`;
+    const page = await browser.newPage();
 
-    // Proxy
-    const proxyUrl =
-      `https://corsproxy.io/?${encodeURIComponent(mlUrl)}`;
-
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+    await page.goto(
+      `https://lista.mercadolivre.com.br/${encodeURIComponent(query)}`,
+      {
+        waitUntil: "domcontentloaded",
+        timeout: 60000
       }
+    );
+
+    await page.waitForSelector(".ui-search-result");
+
+    const products = await page.evaluate(() => {
+
+      const items = document.querySelectorAll(".ui-search-result");
+
+      return Array.from(items).slice(0, 20).map(item => {
+
+        const title =
+          item.querySelector(".poly-component__title")?.innerText || "";
+
+        const price =
+          item.querySelector(".andes-money-amount__fraction")?.innerText || "";
+
+        const link =
+          item.querySelector("a")?.href || "";
+
+        const image =
+          item.querySelector("img")?.src || "";
+
+        return {
+          name: title,
+          price,
+          link,
+          image
+        };
+
+      });
+
     });
 
-    const data = response.data;
+    await browser.close();
 
-    // DEBUG
-    console.log("DATA:", JSON.stringify(data).slice(0, 500));
-
-    if (!data.results) {
-      return [];
-    }
-
-    return data.results.map(item => ({
-      external_id: item.id,
-      name: item.title,
-      price: item.price,
-      old_price: item.original_price || null,
-      discount: item.original_price
-        ? Math.round(
-            ((item.original_price - item.price) /
-              item.original_price) * 100
-          )
-        : null,
-      image: item.thumbnail,
-      link: item.permalink,
-      sales: item.sold_quantity || 0,
-      free_shipping: item.shipping?.free_shipping || false
-    }));
+    return products;
 
   } catch (error) {
 
-    console.error("ERRO COMPLETO:");
+    console.error(error);
 
-    if (error.response) {
-      console.error(error.response.status);
-      console.error(error.response.data);
-    } else {
-      console.error(error.message);
-    }
+    await browser.close();
 
     return [];
   }
