@@ -6,7 +6,7 @@ const {
 } = require('./meliService');
 
 const app = express();
-// OAuth Mercado Livre protegido com PKCE S256.
+// OAuth do Mercado Livre protegido com PKCE S256 e state temporário.
 const oauthStates = new Map();
 app.use(cors());
 app.use(express.json());
