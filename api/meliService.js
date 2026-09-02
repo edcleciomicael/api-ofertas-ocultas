@@ -18,10 +18,14 @@ function required(name) {
   return value;
 }
 
-function getAuthorizationUrl(state) {
+function getAuthorizationUrl(state, codeChallenge) {
   const params = new URLSearchParams({
-    response_type: 'code', client_id: required('MELI_CLIENT_ID'),
-    redirect_uri: required('MELI_REDIRECT_URI'), state,
+    response_type: 'code',
+    client_id: required('MELI_CLIENT_ID'),
+    redirect_uri: required('MELI_REDIRECT_URI'),
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
   });
   return `${AUTH_URL}?${params.toString()}`;
 }
@@ -39,11 +43,14 @@ async function requestToken(payload) {
   return { ...response.data };
 }
 
-async function exchangeCode(code) {
+async function exchangeCode(code, codeVerifier) {
   return requestToken({
-    grant_type: 'authorization_code', client_id: required('MELI_CLIENT_ID'),
-    client_secret: required('MELI_CLIENT_SECRET'), code,
+    grant_type: 'authorization_code',
+    client_id: required('MELI_CLIENT_ID'),
+    client_secret: required('MELI_CLIENT_SECRET'),
+    code,
     redirect_uri: required('MELI_REDIRECT_URI'),
+    code_verifier: codeVerifier,
   });
 }
 
