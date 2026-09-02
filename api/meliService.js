@@ -1,10 +1,12 @@
 const axios = require('axios');
+const { readTokens, writeTokens } = require('./tokenStore');
 
 const API_URL = 'https://api.mercadolibre.com';
 const AUTH_URL = 'https://auth.mercadolivre.com.br/authorization';
 const SITE_ID = process.env.MELI_SITE_ID || 'MLB';
+const savedTokens = readTokens();
 
-let runtimeTokens = {
+let runtimeTokens = savedTokens || {
   accessToken: process.env.MELI_ACCESS_TOKEN || '',
   refreshToken: process.env.MELI_REFRESH_TOKEN || '',
   expiresAt: 0,
@@ -31,8 +33,9 @@ async function requestToken(payload) {
   runtimeTokens = {
     accessToken: response.data.access_token,
     refreshToken: response.data.refresh_token || runtimeTokens.refreshToken,
-    expiresAt: Date.now() + Math.max(0, (response.data.expires_in - 60) * 1000),
+    expiresAt: Date.now() + Math.max(0, (Number(response.data.expires_in) - 60) * 1000),
   };
+  writeTokens(runtimeTokens);
   return { ...response.data };
 }
 
@@ -58,17 +61,18 @@ async function getAccessToken() {
   return runtimeTokens.accessToken || process.env.MELI_ACCESS_TOKEN;
 }
 
-async function meliGet(path, params = {}) {
+async function meliGet(pathname, params = {}) {
   let accessToken = await getAccessToken();
   try {
-    return await axios.get(`${API_URL}${path}`, {
+    return await axios.get(`${API_URL}${pathname}`, {
       params, headers: { Authorization: `Bearer ${accessToken}` }, timeout: 20000,
     });
   } catch (error) {
-    if (error.response?.status !== 401 || !runtimeTokens.refreshToken) throw error;
+    const refreshToken = runtimeTokens.refreshToken || process.env.MELI_REFRESH_TOKEN;
+    if (error.response?.status !== 401 || !refreshToken) throw error;
     await refreshAccessToken();
     accessToken = runtimeTokens.accessToken;
-    return axios.get(`${API_URL}${path}`, {
+    return axios.get(`${API_URL}${pathname}`, {
       params, headers: { Authorization: `Bearer ${accessToken}` }, timeout: 20000,
     });
   }

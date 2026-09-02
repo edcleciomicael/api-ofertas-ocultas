@@ -21,3 +21,11 @@ test('mantém desconto zero sem preço anterior', () => {
   assert.equal(product.originalPrice, 50);
   assert.equal(product.discount, 0);
 });
+
+test('normaliza valores ausentes sem produzir NaN', () => {
+  const product = normalizeProduct({ id: 'MLB2' });
+  assert.equal(product.price, 0);
+  assert.equal(product.originalPrice, 0);
+  assert.equal(product.sales, 0);
+  assert.equal(product.availableQuantity, 0);
+});
