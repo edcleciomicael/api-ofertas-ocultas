@@ -21,19 +21,28 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Dat
 
 app.get('/api/oauth/mercadolivre/authorize', (req, res) => {
   const state = crypto.randomBytes(24).toString('hex');
-  oauthStates.set(state, Date.now() + 10 * 60 * 1000);
-  res.redirect(getAuthorizationUrl(state));
+  const codeVerifier = crypto.randomBytes(64).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url');
+
+  oauthStates.set(state, {
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    codeVerifier,
+  });
+
+  res.redirect(getAuthorizationUrl(state, codeChallenge));
 });
 
 app.get('/api/oauth/mercadolivre/callback', asyncRoute(async (req, res) => {
   const { code, state, error } = req.query;
-  const expiresAt = oauthStates.get(state);
+  const oauthState = oauthStates.get(state);
   oauthStates.delete(state);
   if (error) return res.status(400).send(`Autorização recusada: ${error}`);
-  if (!code || !state || !expiresAt || expiresAt < Date.now()) {
+  if (!code || !state || !oauthState || oauthState.expiresAt < Date.now()) {
     return res.status(400).send('Autorização inválida ou expirada. Inicie novamente.');
   }
-  await exchangeCode(code);
+await exchangeCode(code, oauthState.codeVerifier);
   res.type('html').send(`<!doctype html><html lang="pt-BR"><meta charset="utf-8">
     <title>Ofertas Ocultas</title><body style="font-family:Arial;max-width:720px;margin:60px auto;padding:24px">
     <h1>Mercado Livre conectado!</h1>
